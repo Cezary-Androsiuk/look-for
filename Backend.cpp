@@ -74,7 +74,9 @@ Backend::Backend(int argc, char **argv)
 
 Backend::~Backend()
 {
-    // for()
+    for(FoundFile *foundFile : m_foundFiles)
+        delete foundFile;
+    m_foundFiles.clear();
 }
 
 void Backend::printInfo() noexcept
@@ -86,12 +88,18 @@ void Backend::printInfo() noexcept
     printf("\t optional -c value, if set then phrase will be compared as case sensitive, otherwise will be compared case insensitive\n");
     printf("\n");
     printf("example1: lookfor \"some text\"\n");
-    printf("example2: lookfor \"some text\" -d");
+    printf("example2: lookfor \"some text\" -d\n");
+    printf("example2: lookfor \"some text\" -dc\n");
 }
 
-void Backend::addFileToList(std::filesystem::__cxx11::path foundFile)
+void Backend::addFileToList(std::filesystem::__cxx11::path filePath)
 {
+    FoundFile *foundFile = new FoundFile(filePath, this);
+    foundFile->setPath(filePath.string().c_str());
+    foundFile->setFileName(filePath.filename().string().c_str());
+    foundFile->setExtension(filePath.extension().string().c_str());
 
+    m_foundFiles.append(foundFile);
 }
 
 void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noexcept
@@ -113,6 +121,11 @@ void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noex
 bool Backend::getNoFilesFound() const
 {
     return m_noFilesFound;
+}
+
+FoundFiles Backend::getFoundFiles() const
+{
+    return m_foundFiles;
 }
 
 bool Backend::getFailedAndShouldExit() const

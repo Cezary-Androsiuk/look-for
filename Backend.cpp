@@ -67,7 +67,14 @@ Backend::Backend(int argc, char **argv)
         }
 
     }
+    printf("\n");
+    printf("Directory: %s\n", fs::current_path().string().c_str());
+    printf("Phrase: \"%s\"\n", lookFor.toStdString().c_str());
+    printf("Case Sensitive: %s\n", BOOL_TO_CSTR(caseSensitive));
+    printf("Detail: %s\n", BOOL_TO_CSTR(detailSearching));
 
+    printf("\n" "Searching...\n");
+    fflush(stdout);
     this->lookForFiles(lookFor, detailSearching, caseSensitive);
 
 }
@@ -92,7 +99,7 @@ void Backend::printInfo() noexcept
     printf("example2: lookfor \"some text\" -dc\n");
 }
 
-void Backend::addFileToList(std::filesystem::__cxx11::path filePath)
+void Backend::addFileToList(fs::__cxx11::path filePath)
 {
     FoundFile *foundFile = new FoundFile(filePath, this);
     foundFile->setPath(filePath.string().c_str());
@@ -104,18 +111,26 @@ void Backend::addFileToList(std::filesystem::__cxx11::path filePath)
 
 void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noexcept
 {
+    size_t foundFiles = 0;
+    size_t matchFiles = 0;
     try{
-        for(const auto &file : std::filesystem::recursive_directory_iterator(std::filesystem::current_path()))
+        for(const auto &file : fs::recursive_directory_iterator(fs::current_path()))
         {
             QString fileName(file.path().filename().string().c_str());
             Qt::CaseSensitivity isSensitive = caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive;
             if(fileName.contains(phrase, isSensitive))
+            {
                 this->addFileToList(file);
+                ++matchFiles;
+            }
+            ++foundFiles;
         }
     }
     catch (...) {
         printf("exception occured while%s iterating through files in \"%s\"\n", detail ? " detail" : "", phrase.toStdString().c_str());
     }
+    printf("" "Searching Finished!\n");
+    printf("Found %llu files, and %llu match the phrase\n", foundFiles, matchFiles);
 }
 
 bool Backend::getNoFilesFound() const

@@ -10,7 +10,11 @@
 
 #include "FoundFile.h"
 
+#define BOOL_TO_CSTR(b) ( (b) ? "true" : "false" )
+
 typedef QList<FoundFile *> FoundFiles;
+
+namespace fs = std::filesystem;
 
 class Backend : public QObject
 {
@@ -27,7 +31,7 @@ public:
 
 private:
     static void printInfo() noexcept;
-    void addFileToList(std::filesystem::path filePath);
+    void addFileToList(fs::path filePath);
     void lookForFiles(QString phrase, bool detail, bool caseSensitive) noexcept;
 
 signals:

@@ -68,7 +68,7 @@ Backend::Backend(int argc, char **argv)
 
     }
     printf("\n");
-    printf("Directory: %s\n", fs::current_path().string().c_str());
+    printf("Directory: %s\n", QDir::currentPath().toStdString().c_str());
     printf("Phrase: \"%s\"\n", lookFor.toStdString().c_str());
     printf("Case Sensitive: %s\n", BOOL_TO_CSTR(caseSensitive));
     printf("Detail: %s\n", BOOL_TO_CSTR(detailSearching));
@@ -88,7 +88,6 @@ Backend::~Backend()
 
 void Backend::printInfo() noexcept
 {
-    printf("value to look for was specyfied!\n");
     printf("arg1: text phrase to look for in current directory\n");
     printf("arg2: \n");
     printf("\t optional -d value, if set then phrase will be looked also in the conntent of files in directory, otherwise only in filenames\n");
@@ -99,38 +98,71 @@ void Backend::printInfo() noexcept
     printf("example2: lookfor \"some text\" -dc\n");
 }
 
-void Backend::addFileToList(fs::__cxx11::path filePath)
+std::string Backend::readableNumber(size_t number) noexcept
 {
-    FoundFile *foundFile = new FoundFile(filePath, this);
-    foundFile->setPath(filePath.string().c_str());
-    foundFile->setFileName(filePath.filename().string().c_str());
-    foundFile->setExtension(filePath.extension().string().c_str());
+    // std::string strNumber;
+    // do{
+    //     // strNumber.push_back(number)
+    // }while(!number);
+}
+
+void Backend::addFileToList(QFileInfo fileInfo)
+{
+    FoundFile *foundFile = new FoundFile(this);
+    foundFile->setPath(fileInfo.filePath());
+    foundFile->setFileName(fileInfo.fileName());
+    foundFile->setExtension(fileInfo.suffix());
 
     m_foundFiles.append(foundFile);
 }
 
 void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noexcept
 {
+    QDirIterator dirIt(QDir::currentPath(), QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+
     size_t foundFiles = 0;
+    size_t foundDirs = 0;
     size_t matchFiles = 0;
+    Qt::CaseSensitivity isSensitive = caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive;
+
+    size_t last_write = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    const size_t printDelayMS = 500;
+    printf("Found: %u, Match: %u",0, 0);
+
     try{
-        for(const auto &file : fs::recursive_directory_iterator(fs::current_path()))
+        while(dirIt.hasNext())
         {
-            QString fileName(file.path().filename().string().c_str());
-            Qt::CaseSensitivity isSensitive = caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive;
-            if(fileName.contains(phrase, isSensitive))
+            dirIt.next();
+            if(dirIt.fileName().contains(phrase, isSensitive))
             {
-                this->addFileToList(file);
+                this->addFileToList(dirIt.fileInfo());
                 ++matchFiles;
             }
-            ++foundFiles;
+            if(dirIt.fileInfo().isFile())
+                ++foundFiles;
+            else if(dirIt.fileInfo().isDir())
+                ++foundDirs;
+            if(last_write + printDelayMS < QDateTime::currentDateTime().toMSecsSinceEpoch())
+            {
+                printf("\r" "Found: %u, Match: %u", foundFiles + foundDirs, matchFiles);
+                last_write = QDateTime::currentDateTime().toMSecsSinceEpoch();
+            }
         }
     }
     catch (...) {
-        printf("exception occured while%s iterating through files in \"%s\"\n", detail ? " detail" : "", phrase.toStdString().c_str());
+        printf("Exception occured while%s iterating through files in \"%s\"\n",
+               detail ? " detail" : "", phrase.toStdString().c_str());
     }
-    printf("" "Searching Finished!\n");
-    printf("Found %llu files, and %llu match the phrase\n", foundFiles, matchFiles);
+    printf("\n" "Searching Finished!\n");
+
+    if(!matchFiles)
+    {
+        printf("Found %llu files and %llu dirs, but none of them matching the phrase!\n", foundFiles, foundDirs);
+        m_noFilesFound = true;
+        return;
+    }
+
+    printf("Found %llu files and %llu dirs, and %llu match the phrase\n", foundFiles, foundDirs, matchFiles);
 }
 
 bool Backend::getNoFilesFound() const

@@ -1,8 +1,7 @@
 #include "FoundFile.h"
 
-FoundFile::FoundFile(std::filesystem::path sourcePath, QObject *parent)
+FoundFile::FoundFile(QObject *parent)
     : QObject{parent}
-    , m_sourcePath(sourcePath)
 {}
 
 QString FoundFile::getPath() const
@@ -37,6 +36,8 @@ void FoundFile::setExtension(const QString &extension)
 
 void FoundFile::open() const noexcept
 {
-    std::wstring argument = L"/select," + m_sourcePath.wstring();
+    std::filesystem::path file = m_path.toStdWString();
+    file.make_preferred();
+    std::wstring argument = L"/select,\"" + file.wstring() + L'\"';
     ShellExecute(0, L"open", L"explorer", argument.c_str(), 0, SW_SHOWNORMAL);
 }

@@ -2,10 +2,8 @@
 #define FOUNDFILE_H
 
 #include <QObject>
-
-#include <filesystem>
-#include <string>
 #include <windows.h>
+#include <filesystem>
 
 class FoundFile : public QObject
 {
@@ -15,7 +13,7 @@ class FoundFile : public QObject
     Q_PROPERTY(QString extension READ getExtension CONSTANT FINAL)
 
 public:
-    explicit FoundFile(std::filesystem::path sourcePath, QObject *parent = nullptr);
+    explicit FoundFile(QObject *parent = nullptr);
 
     QString getPath() const;
     QString getFileName() const;
@@ -30,7 +28,6 @@ public:
 signals:
 
 private:
-    std::filesystem::path m_sourcePath;
     QString m_path;
     QString m_fileName;
     QString m_extension;

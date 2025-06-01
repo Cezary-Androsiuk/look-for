@@ -5,6 +5,28 @@ Backend::Backend(int argc, char **argv)
     , m_failedAndShouldExit(false)
     , m_noFilesFound(false)
 {
+    printf("current path: %s\n",QDir::currentPath().toStdString().c_str());
+
+    auto &sif = FoundFile::supportedImageFormats;
+    sif = QImageReader::supportedImageFormats();
+    // if(!sif.contains("jpg"))
+    //     sif.append("jpg");
+    // if(!sif.contains("png"))
+    //     sif.append("png");
+    // if(!sif.contains("heic"))
+    //     sif.append("heic");
+
+    printf("supported image formats:\n");
+    if(!sif.isEmpty())
+        printf("%s", sif[0].toStdString().c_str());
+    for(auto it = sif.begin()+1; it != sif.end(); ++it)
+        printf(", %s", it->toStdString().c_str());
+
+    QElapsedTimer timer;
+    timer.start();
+    // lookfor 20161110_23
+    m_foundFiles.reserve(16'777'216); /// 16 MB
+
     QString lookFor;
     bool detailSearching = false;
     bool caseSensitive = false;
@@ -67,23 +89,29 @@ Backend::Backend(int argc, char **argv)
         }
 
     }
+
     printf("\n");
     printf("Directory: %s\n", QDir::currentPath().toStdString().c_str());
     printf("Phrase: \"%s\"\n", lookFor.toStdString().c_str());
     printf("Case Sensitive: %s\n", BOOL_TO_CSTR(caseSensitive));
     printf("Detail: %s\n", BOOL_TO_CSTR(detailSearching));
 
+    m_searchPhrase = lookFor;
+
+    // printf("elapsed: %lld \n", timer.elapsed());
+
     printf("\n" "Searching...\n");
     fflush(stdout);
     this->lookForFiles(lookFor, detailSearching, caseSensitive);
 
+    // printf("\n""elapsed: %lld \n", timer.elapsed());
 }
 
 Backend::~Backend()
 {
-    for(FoundFile *foundFile : m_foundFiles)
-        delete foundFile;
-    m_foundFiles.clear();
+    for(auto it = m_foundFiles.begin(); it != m_foundFiles.end(); ++it)
+        delete *it;
+    // m_foundFiles.clear();
 }
 
 void Backend::printInfo() noexcept
@@ -104,6 +132,7 @@ std::string Backend::readableNumber(size_t number) noexcept
     // do{
     //     // strNumber.push_back(number)
     // }while(!number);
+    return "";
 }
 
 void Backend::addFileToList(QFileInfo fileInfo)
@@ -112,6 +141,8 @@ void Backend::addFileToList(QFileInfo fileInfo)
     foundFile->setPath(fileInfo.filePath());
     foundFile->setFileName(fileInfo.fileName());
     foundFile->setExtension(fileInfo.suffix());
+
+    foundFile->testFileType();
 
     m_foundFiles.append(foundFile);
 }
@@ -125,7 +156,7 @@ void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noex
     size_t matchFiles = 0;
     Qt::CaseSensitivity isSensitive = caseSensitive ? Qt::CaseSensitive : Qt::CaseInsensitive;
 
-    size_t last_write = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    size_t last_write = QDateTime::currentMSecsSinceEpoch();
     const size_t printDelayMS = 500;
     printf("Found: %u, Match: %u",0, 0);
 
@@ -142,12 +173,14 @@ void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noex
                 ++foundFiles;
             else if(dirIt.fileInfo().isDir())
                 ++foundDirs;
-            if(last_write + printDelayMS < QDateTime::currentDateTime().toMSecsSinceEpoch())
+
+            if(last_write + printDelayMS < QDateTime::currentMSecsSinceEpoch())
             {
                 printf("\r" "Found: %u, Match: %u", foundFiles + foundDirs, matchFiles);
-                last_write = QDateTime::currentDateTime().toMSecsSinceEpoch();
+                last_write = QDateTime::currentMSecsSinceEpoch();
             }
         }
+        printf("\r" "Found: %u, Match: %u", foundFiles + foundDirs, matchFiles);
     }
     catch (...) {
         printf("Exception occured while%s iterating through files in \"%s\"\n",
@@ -168,6 +201,11 @@ void Backend::lookForFiles(QString phrase, bool detail, bool caseSensitive) noex
 bool Backend::getNoFilesFound() const
 {
     return m_noFilesFound;
+}
+
+const QString &Backend::getSearchPhrase() const
+{
+    return m_searchPhrase;
 }
 
 FoundFiles Backend::getFoundFiles() const

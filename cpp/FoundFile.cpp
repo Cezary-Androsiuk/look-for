@@ -1,8 +1,14 @@
 #include "FoundFile.h"
 
+#include <filesystem>
+
+QByteArrayList FoundFile::supportedImageFormats;
+
 FoundFile::FoundFile(QObject *parent)
     : QObject{parent}
-{}
+{
+
+}
 
 QString FoundFile::getPath() const
 {
@@ -19,6 +25,11 @@ QString FoundFile::getExtension() const
     return m_extension;
 }
 
+bool FoundFile::getIsImage() const
+{
+    return m_isImage;
+}
+
 void FoundFile::setPath(const QString &path)
 {
     m_path = path;
@@ -32,6 +43,20 @@ void FoundFile::setFileName(const QString &fileName)
 void FoundFile::setExtension(const QString &extension)
 {
     m_extension = extension;
+}
+
+void FoundFile::testFileType()
+{
+    // printf("file format: %s\n", m_extension.toStdString().c_str());
+
+    if(FoundFile::supportedImageFormats.contains(m_extension))
+    {
+        m_isImage = true;
+    }
+    else
+    {
+        m_isImage = false;
+    }
 }
 
 void FoundFile::open() const noexcept

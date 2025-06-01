@@ -10,6 +10,8 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QDebug>
+#include <QElapsedTimer>
+#include <QImageReader>
 
 #include "FoundFile.h"
 
@@ -20,6 +22,7 @@ typedef QList<FoundFile *> FoundFiles;
 class Backend : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString searchPhrase READ getSearchPhrase CONSTANT FINAL)
     Q_PROPERTY(FoundFiles foundFiles READ getFoundFiles CONSTANT FINAL)
 
 public:
@@ -28,6 +31,7 @@ public:
 
     bool getFailedAndShouldExit() const;
     bool getNoFilesFound() const;
+    const QString &getSearchPhrase() const;
     Q_INVOKABLE FoundFiles getFoundFiles() const; // getter mismarked as a slot XDD (but only when using "public slots:")
 
 private:
@@ -39,6 +43,7 @@ private:
 signals:
 
 private:
+    QString m_searchPhrase;
     bool m_failedAndShouldExit;
     bool m_noFilesFound;
     FoundFiles m_foundFiles;

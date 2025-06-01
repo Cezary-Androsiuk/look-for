@@ -16,9 +16,10 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+    // engine.addImportPath("qml"); // not works
     engine.rootContext()->setContextProperty("Backend", &backend);
 
-    const QUrl url(QStringLiteral("qrc:/LookFor/Main.qml"));
+    const QUrl url(QStringLiteral("qrc:/LookFor/qml/Main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
